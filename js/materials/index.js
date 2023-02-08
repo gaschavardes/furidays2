@@ -9,6 +9,7 @@ import TestMaterial from './test/TestMaterial'
 import GlassMaterial from './glass/GlassMaterial'
 import CloudsMaterial from './clouds/CloudsMaterial'
 import TextMaterial from './text/TextMaterial'
+import CloudVolMaterial from './cloudVol/CloudVolMaterial'
 
 // Shader #include chunks
 ShaderChunk.defaultVert = glslifyStrip(defaultVert)
@@ -16,5 +17,5 @@ ShaderChunk.defaultFrag = glslifyStrip(defaultFrag)
 ShaderChunk.normalsVert = glslifyStrip(normalsVert)
 
 export {
-	BasicMaterial, TestMaterial, GlassMaterial, CloudsMaterial, TextMaterial
+	BasicMaterial, TestMaterial, GlassMaterial, CloudsMaterial, TextMaterial, CloudVolMaterial
 }

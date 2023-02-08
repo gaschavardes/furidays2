@@ -1,10 +1,11 @@
-import { Color, Fog, Mesh, PerspectiveCamera, Object3D, Group, PlaneGeometry, Matrix4, InstancedMesh, Euler, Quaternion, Layers, Vector2, ShaderMaterial, WebGLCubeRenderTarget, Uint32BufferAttribute, Vector3, BufferGeometry, BufferAttribute, Scene, TorusKnotBufferGeometry, LatheGeometry, MeshBasicMaterial } from 'three'
+import { Color, Fog, Mesh, SphereGeometry, BoxGeometry, Data3DTexture, RedFormat, LinearFilter, CanvasTexture, BackSide, PerspectiveCamera, Object3D, Group, PlaneGeometry, Matrix4, InstancedMesh, Euler, Quaternion, Layers, Vector2, ShaderMaterial, WebGLCubeRenderTarget, Uint32BufferAttribute, Vector3, BufferGeometry, BufferAttribute, Scene, TorusKnotBufferGeometry, LatheGeometry, MeshBasicMaterial } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { BasicMaterial, GlassMaterial, CloudsMaterial, TextMaterial } from '../materials'
+import { BasicMaterial, GlassMaterial, CloudsMaterial, TextMaterial, CloudVolMaterial } from '../materials'
 import store from '../store'
 import { E } from '../utils'
 import GlobalEvents from '../utils/GlobalEvents'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise'
+// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass'
@@ -65,6 +66,7 @@ export default class MainScene extends Scene {
 		this.drawDisco()
 		this.particle = this.buildParticle()
 		this.generateParticles()
+		// this.drawVolumetric()
 		this.drawFuridays()
 		this.buildPasses()
 	}
@@ -133,6 +135,60 @@ export default class MainScene extends Scene {
 		// 	this.particles.push(this.particleData(Math.random() * 3 - 1.5, Math.random() * 1 - 0.5))
 		// }
 		this.createInstance()
+	}
+
+	drawVolumetric() {
+		const canvas = document.createElement('canvas')
+		canvas.width = store.window.w
+		canvas.height = store.window.h
+
+		const context = canvas.getContext('2d')
+		const gradient = context.createLinearGradient(0, 0, 0, 32)
+		gradient.addColorStop(0.0, '#014a84')
+		gradient.addColorStop(0.5, '#0561a0')
+		gradient.addColorStop(1.0, '#437ab6')
+		context.fillStyle = gradient
+		context.fillRect(0, 0, store.window.w, store.window.h)
+
+		const sky = new Mesh(
+			new SphereGeometry(1000),
+			new MeshBasicMaterial({ map: new CanvasTexture(canvas), side: BackSide })
+		)
+		this.add(sky)
+
+		// Texture
+
+		const size = 128
+		const data = new Uint8Array(size * size * size)
+
+		let i = 0
+		const scale = 0.1
+		const perlin = new ImprovedNoise()
+		const vector = new Vector3()
+
+		for (let z = 0; z < size; z++) {
+			for (let y = 0; y < size; y++) {
+				for (let x = 0; x < size; x++) {
+					const d = 1.0 - vector.set(x, y, z).subScalar(size / 2).divideScalar(size).length()
+					data[i] = (128 + 128 * perlin.noise(x * scale / 1.5, y * scale, z * scale / 1.5)) * d * d
+					i++
+				}
+			}
+		}
+
+		const texture = new Data3DTexture(data, size, size, size)
+		texture.format = RedFormat
+		texture.minFilter = LinearFilter
+		texture.magFilter = LinearFilter
+		texture.unpackAlignment = 1
+		texture.needsUpdate = true
+
+		const geometry = new BoxGeometry(10, 1, 1)
+		const material = new CloudVolMaterial({
+			texture: texture
+		})
+		this.cloudMesh = new Mesh(geometry, material)
+		this.add(this.cloudMesh)
 	}
 
 	createInstance() {
@@ -436,10 +492,13 @@ export default class MainScene extends Scene {
 	}
 
 	onRaf = () => {
+		// this.cloudMesh.material.uniforms.frame.value = this.cloudMesh.material.uniforms.frame.value +
+		// this.cloudMesh.material.uniforms.cameraPos.value.copy(this.camera.position)
 		this.controls.update()
 		this.qucheItem.material.uniforms.isQuche.value = 1
 		this.item.material.uniforms.isQuche.value = 0
 		this.updadeInstanceMatrix()
+		// this.renderFade()
 		this.renderBloom(true)
 		this.finalComposer.render()
 		// this.item.rotation.y = store.WebGL.globalUniforms.uTime.value
@@ -467,6 +526,18 @@ export default class MainScene extends Scene {
 	}
 
 	renderBloom = (mask) => {
+		if (mask === true) {
+			this.traverse(this.darkenNonBloomed)
+			this.composer.render()
+			this.traverse(this.restoreMaterial)
+		} else {
+			store.camera.layers.set(BLOOM_SCENE)
+			this.composer.render()
+			store.camera.layers.set(ENTIRE_SCENE)
+		}
+	}
+
+	renderFade = (mask) => {
 		if (mask === true) {
 			this.traverse(this.darkenNonBloomed)
 			this.composer.render()

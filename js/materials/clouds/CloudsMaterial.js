@@ -2,7 +2,7 @@ import { RawShaderMaterial, DoubleSide, Vector2 } from 'three'
 import vertexShader from './vert.glsl'
 import fragmentShader from './frag.glsl'
 
-export default class Clouds extends RawShaderMaterial {
+export default class CloudsMaterial extends RawShaderMaterial {
 	constructor(options) {
 		super({
 			vertexShader,
