@@ -26,11 +26,11 @@ void main() {
 	vec2 uv = gl_FragCoord.xy / resolution;
 	vec4 t = texture2D(alphaMap, vUv);
 
-	float noiseVal = noise(vec2(uv.x + uTime * 0.05, uv.y) * (15.));
+	float noiseVal = noise(vec2(uv.x + uTime * 0.05, uv.y) * (20.));
 	float colorSwitch = smoothstep(.4, .6, uv.x);
 	float finalSwitch = smoothstep( 0.2, 0.5, (noiseVal + colorSwitch + 0.5) * (colorSwitch));
 	// colorSwitch = step(.5, uv.x);
-	vec3 color = mix(vec3(1., 1., 1.), vec3(1., 0., 0.), finalSwitch);
+	vec3 color = mix(vec3(.9, .9,.9), vec3(1., 0., 0.), finalSwitch);
 	vec3 finalColor = mix(color, vec3(0., 0., 0.), isDark);
     gl_FragColor = vec4(finalColor, t.r - 0.1);
 	// gl_FragColor = vec4(vec3(finalSwitch), t.r - 0.1);

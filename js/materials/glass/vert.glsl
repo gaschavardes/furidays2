@@ -78,7 +78,7 @@ void main() {
 	pos = rotate(pos, vec3(0., 1., 0.), uTime * 0.2);
 	vec3 newCenter = rotate(center, vec3(0., 1., 0.), uTime * 0.2);
 	vec3 newRandom = rotate(random, vec3(0., 1., 0.), uTime * 0.2);
-	float movingEl = exponentialInOut((smoothstep(-8., -6., newCenter.y)) * ( 1. - smoothstep(6., 8., newCenter.y)) * (smoothstep(0., 10., newCenter.x + 2.)) * min(abs(sin(uTime * 0.1)) * 2., 1.));
+	float movingEl = exponentialInOut((smoothstep(-8., -6., newCenter.y)) * ( 1. - smoothstep(6., 8., newCenter.y)) * (smoothstep(0., 10., newCenter.x + 2.)) * uProgress);
 
 
     vec3 objectNormal = vec3(normal);

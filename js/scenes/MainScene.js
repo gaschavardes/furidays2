@@ -1,6 +1,6 @@
 import { Color, Fog, Mesh, PerspectiveCamera, Object3D, Group, PlaneGeometry, Matrix4, InstancedMesh, Euler, Quaternion, Layers, Vector2, ShaderMaterial, WebGLCubeRenderTarget, Uint32BufferAttribute, Vector3, BufferGeometry, BufferAttribute, Scene, TorusKnotBufferGeometry, LatheGeometry, MeshBasicMaterial } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { BasicMaterial, GlassMaterial, CloudsMaterial } from '../materials'
+import { BasicMaterial, GlassMaterial, CloudsMaterial, TextMaterial } from '../materials'
 import store from '../store'
 import { E } from '../utils'
 import GlobalEvents from '../utils/GlobalEvents'
@@ -14,7 +14,10 @@ import screenFxVert from '../../glsl/includes/screenFx/vert.glsl'
 import screenFxFrag from '../../glsl/includes/screenFx/frag.glsl'
 import finalFxVert from '../../glsl/includes/finalPass/vert.glsl'
 import finalFxFrag from '../../glsl/includes/finalPass/frag.glsl'
-const ENTIRE_SCENE = 0; const BLOOM_SCENE = 12
+
+import { TimelineMax } from 'gsap/gsap-core'
+
+const ENTIRE_SCENE = 0; const BLOOM_SCENE = 12; const HALF_BLOOM_SCENE = 15
 export default class MainScene extends Scene {
 	constructor() {
 		super()
@@ -30,13 +33,16 @@ export default class MainScene extends Scene {
 		this.materials = {}
 		this.load()
 		this.bloomLayer = new Layers()
+		this.halfbloomLayer = new Layers()
 		this.bloomLayer.set(BLOOM_SCENE)
+		this.halfbloomLayer.set(HALF_BLOOM_SCENE)
 		this.composer = new EffectComposer(store.WebGL.renderer)
 		this.composer.setSize(store.window.w, store.window.h)
 
 		E.on('App:start', () => {
 			this.build()
 			this.addEvents()
+			this.startAnim()
 		})
 	}
 
@@ -70,7 +76,7 @@ export default class MainScene extends Scene {
 		this.fxaaPass.material.uniforms.resolution.value.x = 1 / (store.window.w * store.WebGL.renderer.getPixelRatio())
 		this.fxaaPass.material.uniforms.resolution.value.y = 1 / (store.window.fullHeight * store.WebGL.renderer.getPixelRatio())
 
-		this.bloomPass = new UnrealBloomPass(new Vector2(store.window.w, store.window.fullHeight), 2.120, 2, 0.6)
+		this.bloomPass = new UnrealBloomPass(new Vector2(store.window.w, store.window.fullHeight), 2.120, 1, 0.6)
 		this.bloomPass.enabled = true
 
 		this.screenFxPass = new ShaderPass(new ShaderMaterial({
@@ -195,19 +201,38 @@ export default class MainScene extends Scene {
 	}
 
 	drawFuridays() {
-		console.log(this.assets.models.furidays.scene)
 		this.furidays = new Group()
 		// this.item = this.assets.models.furidays.scene
 		this.assets.models.furidays.scene.children.forEach((el, i) => {
 			const geometry = el.geometry
-			const material = i === 0 ? new MeshBasicMaterial({ color: 'blue' }) : new MeshBasicMaterial({ color: 'white' })
+			const material = new TextMaterial({
+				color1: i === 0 ? 'rgb(0, 255, 0)' : 'rgb(255, 255, 255)',
+				color2: i === 0 ? 'rgb(255, 255, 0)' : 'rgb(255, 255, 255)',
+				resolution: [store.window.w * store.WebGL.renderer.getPixelRatio(), store.window.h * store.WebGL.renderer.getPixelRatio()]
+
+			})
+
 			const mesh = new Mesh(geometry, material)
+			mesh.layers.enable(i === 0 ? BLOOM_SCENE : HALF_BLOOM_SCENE)
 			this.furidays.add(mesh)
 		})
 		this.add(this.furidays)
-		this.furidays.position.set(0, 0, 45)
-		this.furidays.scale.set(1, 1, 1)
+		this.furidays.position.set(0, 0, 15)
+		// this.furidays.scale.set(3.5, 3.5, 3.5)
+		this.furidays.scale.set(8, 8, 8)
 		this.furidays.rotateX(Math.PI * 0.5)
+
+		const vol2 = this.assets.models.vol2.scene.children[0]
+		const geometry = vol2.geometry
+		const material = new TextMaterial({
+			color1: 'rgb(100, 255, 100)',
+			color2: 'rgb(100, 255, 100)',
+			resolution: [store.window.w * store.WebGL.renderer.getPixelRatio(), store.window.h * store.WebGL.renderer.getPixelRatio()]
+		})
+		const mesh = new Mesh(geometry, material)
+		mesh.scale.set(0.2, 0.2, 0.2)
+		mesh.position.set(-vol2.position.x * 2, 0, -vol2.position.z * 1.5)
+		this.furidays.add(mesh)
 	}
 
 	drawPieces() {
@@ -365,6 +390,7 @@ export default class MainScene extends Scene {
 		renderTarget.fromEquirectangularTexture(store.WebGL.renderer, this.envTexture)
 		const texture = renderTarget.texture
 		store.WebGL.renderer.initTexture(texture)
+		this.pineapple = new Group()
 
 		this.GlassMaterial = new GlassMaterial({
 			envMap: texture,
@@ -393,8 +419,11 @@ export default class MainScene extends Scene {
 		this.qucheItem.material.uniforms.isQuche.value = 1
 		this.qucheItem.layers.enable(BLOOM_SCENE)
 		this.item.material.uniforms.isQuche.value = 0
-		this.add(this.item)
-		this.add(this.qucheItem)
+		this.pineapple.add(this.item)
+		this.pineapple.add(this.qucheItem)
+		this.pineapple.position.set(0., 0., -100)
+		this.pineapple.rotation.set(Math.PI * 0.5, 0., 0)
+		this.add(this.pineapple)
 	}
 
 	randomIntFromInterval(min, max) {
@@ -454,6 +483,10 @@ export default class MainScene extends Scene {
 			this.materials[obj.uuid] = obj.material
 			obj.material.uniforms.isDark.value = 1
 		}
+		if (obj.isMesh && this.halfbloomLayer.test(obj.layers) === true) {
+			this.materials[obj.uuid] = obj.material
+			obj.material.uniforms.isDark.value = 0.3
+		}
 	}
 
 	restoreMaterial = (obj) => {
@@ -466,6 +499,40 @@ export default class MainScene extends Scene {
 	onResize = () => {
 		this.camera.aspect = store.window.w / store.window.h
 		this.camera.updateProjectionMatrix()
+	}
+
+	startAnim() {
+		this.tl = new TimelineMax({ yoyo: true, repeat: -1, repeatDelay: 3 })
+		this.pineapplePos = this.pineapple.position
+		this.pineappleRot = Math.PI * 0.5
+		this.pineappleProgress = 0
+		this.tl.to(this.pineapplePos, {
+			x: 0,
+			y: 0,
+			z: 0,
+			duration: 5,
+			onUpdate: () => {
+				console.log(this.pineapplePos)
+				this.pineapple.position.set(this.pineapplePos.x, this.pineapplePos.y, this.pineapplePos.z)
+			}
+		})
+			.to(this, {
+				pineappleRot: 0,
+				duration: 5,
+				onUpdate: () => {
+					this.pineapple.rotation.set(this.pineappleRot, 0., 0)
+				}
+			}, '-=4')
+			.to(this, {
+				pineappleProgress: 1,
+				duration: 3,
+				onUpdate: () => {
+					this.item.material.uniforms.uProgress.value = this.pineappleProgress
+					this.furidays.children.forEach(el => {
+						el.material.uniforms.progress.value = this.pineappleProgress
+					})
+				}
+			}, '-=2')
 	}
 
 	load() {
@@ -502,7 +569,6 @@ export default class MainScene extends Scene {
 		for (const key in fbx) {
 			store.AssetLoader.loadFbx((`models/${fbx[key]}`)).then((gltf, animation) => {
 				this.assets.models[key] = gltf
-				console.log('GLTF', gltf)
 			})
 		}
 	}
