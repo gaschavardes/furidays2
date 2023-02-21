@@ -188,7 +188,7 @@ export default class MainScene extends Scene {
 		this.add(this.furidays)
 		this.furidays.position.set(0, 0, 15)
 		// this.furidays.scale.set(3.5, 3.5, 3.5)
-		store.isMobile ? this.furidays.scale.set(3.2, 3.2, 3.2) : this.furidays.scale.set(8, 8, 8)
+		store.isMobile ? this.furidays.scale.set(3.7, 3.7, 3.7) : this.furidays.scale.set(8, 8, 8)
 		this.furidays.rotateX(Math.PI * 0.5)
 
 		const vol2 = this.assets.models.vol2.scene.children[0]
