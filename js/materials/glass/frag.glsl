@@ -49,7 +49,7 @@ void main() {
 		vec4 matCap = texture2D(matCapMap, uv);
 
 		vec4 envMapColor = textureCube(envMap, vReflect + vNormal);
-		envMapColor.rgb = mix(envMapColor.rgb, vec3(0., 1., 0.) + vNormal * 0.5, isQuche);
+		envMapColor.rgb = mix(envMapColor.rgb, vec3(-1., 1., 0.) + vNormal * 0.5, isQuche);
 		// float test = step(backText.g, .3);
 		// vec4 texture = mix(backText, envMapColor, test);
 		// gl_FragColor = vec4(envMapColor.rgb, 0.6);

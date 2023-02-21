@@ -1,6 +1,6 @@
-import { Color, Fog, Mesh, SphereGeometry, BoxGeometry, Data3DTexture, RedFormat, LinearFilter, CanvasTexture, BackSide, PerspectiveCamera, Object3D, Group, PlaneGeometry, Matrix4, InstancedMesh, Euler, Quaternion, Layers, Vector2, ShaderMaterial, WebGLCubeRenderTarget, Uint32BufferAttribute, Vector3, BufferGeometry, BufferAttribute, Scene, TorusKnotBufferGeometry, LatheGeometry, MeshBasicMaterial } from 'three'
+import { Color, Fog, Mesh, RGBAFormat, NearestFilter, DepthTexture, UnsignedShortType, DepthFormat, SphereGeometry, WebGLRenderTarget, BoxGeometry, Data3DTexture, RedFormat, LinearFilter, CanvasTexture, BackSide, PerspectiveCamera, Object3D, Group, PlaneGeometry, Matrix4, InstancedMesh, Euler, Quaternion, Layers, Vector2, ShaderMaterial, WebGLCubeRenderTarget, Uint32BufferAttribute, Vector3, BufferGeometry, BufferAttribute, Scene, TorusKnotBufferGeometry, LatheGeometry, MeshBasicMaterial } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { BasicMaterial, GlassMaterial, CloudsMaterial, TextMaterial, CloudVolMaterial } from '../materials'
+import { BasicMaterial, GlassMaterial, TextMaterial } from '../materials'
 import store from '../store'
 import { E } from '../utils'
 import GlobalEvents from '../utils/GlobalEvents'
@@ -15,6 +15,7 @@ import screenFxVert from '../../glsl/includes/screenFx/vert.glsl'
 import screenFxFrag from '../../glsl/includes/screenFx/frag.glsl'
 import finalFxVert from '../../glsl/includes/finalPass/vert.glsl'
 import finalFxFrag from '../../glsl/includes/finalPass/frag.glsl'
+import Clouds from '../components/Clouds'
 
 import { TimelineMax } from 'gsap/gsap-core'
 
@@ -48,10 +49,6 @@ export default class MainScene extends Scene {
 	}
 
 	build() {
-		this.torus = new Mesh(
-			new TorusKnotBufferGeometry(1, 0.4, 132, 16),
-			new BasicMaterial()
-		)
 		this.disco = this.assets.models.pineapplefbx.children.slice(0, this.assets.models.pineapplefbx.children.length - 1)
 		this.disco.forEach((el, i) => {
 			if (el.name === 'Pineapple_Mesh') {
@@ -64,11 +61,43 @@ export default class MainScene extends Scene {
 		this.drawPieces()
 		this.drawQuche()
 		this.drawDisco()
-		this.particle = this.buildParticle()
-		this.generateParticles()
+		// this.particle = this.buildParticle()
+		// this.generateParticles()
+		this.clouds = new Clouds({ pos: new Vector3() })
+		this.clouds.build()
+		this.add(this.clouds)
+		this.addBackground()
+		this.setCloudRT()
 		// this.drawVolumetric()
 		this.drawFuridays()
 		this.buildPasses()
+	}
+
+	addBackground() {
+		this.bkgMaterial = new BasicMaterial()
+		this.bkgMaterial.uniforms.uResolution.value = new Vector2(
+			store.window.w * store.WebGL.renderer.getPixelRatio(),
+			store.window.h * store.WebGL.renderer.getPixelRatio()
+		)
+		this.bkg = new Mesh(new PlaneGeometry(2000, 2000), this.bkgMaterial)
+		this.bkg.rotation.set(-Math.PI * 0.1, 0, 0)
+		this.bkg.layers.enable(BLOOM_SCENE)
+		this.bkg.position.set(0, 0, -100)
+		this.add(this.bkg)
+	}
+
+	setCloudRT() {
+		this.renderTarget = new WebGLRenderTarget(1, 1)
+		this.renderTarget.texture.format = RGBAFormat
+		this.renderTarget.texture.minFilter = NearestFilter
+		this.renderTarget.texture.magFilter = NearestFilter
+		this.renderTarget.texture.generateMipmaps = false
+		this.renderTarget.stencilBuffer = false
+		this.renderTarget.depthBuffer = true
+		this.renderTarget.depthTexture = new DepthTexture()
+		this.renderTarget.depthTexture.type = UnsignedShortType
+		this.renderTarget.depthTexture.format = DepthFormat
+		this.renderTarget.setSize(Math.floor(store.window.w * store.WebGL.renderer.getPixelRatio()), Math.floor(store.window.h * store.WebGL.renderer.getPixelRatio()))
 	}
 
 	buildPasses() {
@@ -78,7 +107,7 @@ export default class MainScene extends Scene {
 		this.fxaaPass.material.uniforms.resolution.value.x = 1 / (store.window.w * store.WebGL.renderer.getPixelRatio())
 		this.fxaaPass.material.uniforms.resolution.value.y = 1 / (store.window.fullHeight * store.WebGL.renderer.getPixelRatio())
 
-		this.bloomPass = new UnrealBloomPass(new Vector2(store.window.w, store.window.fullHeight), 2.120, 1, 0.6)
+		this.bloomPass = new UnrealBloomPass(new Vector2(store.window.w, store.window.fullHeight), 1.120, 2, 0.4)
 		this.bloomPass.enabled = true
 
 		this.screenFxPass = new ShaderPass(new ShaderMaterial({
@@ -116,108 +145,6 @@ export default class MainScene extends Scene {
 		this.finalComposer.addPass(finalPass)
 	}
 
-	generateParticles() {
-		// this.particles = array.map((c, cIdx) => {
-		// 	const x = Math.random() * 100 - 50
-		// 	const y = Math.random() * 100 - 50
-		// 	const p = this.particleData(x, y)
-		// 	return p
-		// })
-		this.particles = []
-		for (let i = 0; i < this.particlesCount; i++) {
-			const x = Math.random() * 400 - 200
-			const y = Math.random() * 200 - 100
-			const p = this.particleData(x, y)
-			this.particles.push(p)
-		}
-
-		// for (let i = 0; i < this.count; i++) {
-		// 	this.particles.push(this.particleData(Math.random() * 3 - 1.5, Math.random() * 1 - 0.5))
-		// }
-		this.createInstance()
-	}
-
-	drawVolumetric() {
-		const canvas = document.createElement('canvas')
-		canvas.width = store.window.w
-		canvas.height = store.window.h
-
-		const context = canvas.getContext('2d')
-		const gradient = context.createLinearGradient(0, 0, 0, 32)
-		gradient.addColorStop(0.0, '#014a84')
-		gradient.addColorStop(0.5, '#0561a0')
-		gradient.addColorStop(1.0, '#437ab6')
-		context.fillStyle = gradient
-		context.fillRect(0, 0, store.window.w, store.window.h)
-
-		const sky = new Mesh(
-			new SphereGeometry(1000),
-			new MeshBasicMaterial({ map: new CanvasTexture(canvas), side: BackSide })
-		)
-		this.add(sky)
-
-		// Texture
-
-		const size = 128
-		const data = new Uint8Array(size * size * size)
-
-		let i = 0
-		const scale = 0.1
-		const perlin = new ImprovedNoise()
-		const vector = new Vector3()
-
-		for (let z = 0; z < size; z++) {
-			for (let y = 0; y < size; y++) {
-				for (let x = 0; x < size; x++) {
-					const d = 1.0 - vector.set(x, y, z).subScalar(size / 2).divideScalar(size).length()
-					data[i] = (128 + 128 * perlin.noise(x * scale / 1.5, y * scale, z * scale / 1.5)) * d * d
-					i++
-				}
-			}
-		}
-
-		const texture = new Data3DTexture(data, size, size, size)
-		texture.format = RedFormat
-		texture.minFilter = LinearFilter
-		texture.magFilter = LinearFilter
-		texture.unpackAlignment = 1
-		texture.needsUpdate = true
-
-		const geometry = new BoxGeometry(10, 1, 1)
-		const material = new CloudVolMaterial({
-			texture: texture
-		})
-		this.cloudMesh = new Mesh(geometry, material)
-		this.add(this.cloudMesh)
-	}
-
-	createInstance() {
-		const matrix = new Matrix4()
-		this.instanceMesh = new InstancedMesh(this.particleGeometry, this.particleMaterial, this.particles.length)
-		this.particles.forEach((el, i) => {
-			const position = new Vector3()
-			const rotation = new Euler()
-			const quaternion = new Quaternion()
-			const scale = new Vector3()
-
-			position.x = el.x
-			position.y = el.y
-			position.z = -100
-
-			rotation.x = 0
-			rotation.y = el.rotationZ
-			rotation.z = el.rotationZ
-			quaternion.setFromEuler(rotation)
-
-			scale.x = scale.y = scale.z = 10
-			// this.posArray.push(position)
-			matrix.compose(position, quaternion, scale)
-			this.instanceMesh.setMatrixAt(i, matrix)
-		})
-		this.instanceMesh.layers.enable(BLOOM_SCENE)
-		this.add(this.instanceMesh)
-	}
-
 	particleData(x, y) {
 		const particle = {}
 		particle.x = x
@@ -240,22 +167,6 @@ export default class MainScene extends Scene {
 		return particle
 	}
 
-	buildParticle() {
-		this.particleGeometry = new PlaneGeometry(1, 1)
-		this.particleMaterial = new CloudsMaterial({
-			color: 0xffffff,
-			alphaMap: this.smoke,
-			depthTest: false,
-			opacity: 1,
-			transparent: true,
-			resolution: [store.window.w * store.WebGL.renderer.getPixelRatio(), store.window.h * store.WebGL.renderer.getPixelRatio()],
-			isDark: 0
-		})
-		this.particle = new Mesh(this.particleGeometry, this.particleMaterial)
-		this.particle.scale.z = 3
-		// this.add(this.particle)
-	}
-
 	drawFuridays() {
 		this.furidays = new Group()
 		// this.item = this.assets.models.furidays.scene
@@ -275,7 +186,7 @@ export default class MainScene extends Scene {
 		this.add(this.furidays)
 		this.furidays.position.set(0, 0, 15)
 		// this.furidays.scale.set(3.5, 3.5, 3.5)
-		this.furidays.scale.set(8, 8, 8)
+		store.isMobile ? this.furidays.scale.set(3.2, 3.2, 3.2) : this.furidays.scale.set(8, 8, 8)
 		this.furidays.rotateX(Math.PI * 0.5)
 
 		const vol2 = this.assets.models.vol2.scene.children[0]
@@ -477,7 +388,7 @@ export default class MainScene extends Scene {
 		this.item.material.uniforms.isQuche.value = 0
 		this.pineapple.add(this.item)
 		this.pineapple.add(this.qucheItem)
-		this.pineapple.position.set(0., 0., -100)
+		this.pineapple.position.set(0., 0., -50)
 		this.pineapple.rotation.set(Math.PI * 0.5, 0., 0)
 		this.add(this.pineapple)
 	}
@@ -488,56 +399,39 @@ export default class MainScene extends Scene {
 
 	addEvents() {
 		E.on(GlobalEvents.RESIZE, this.onResize)
+
 		store.RAFCollection.add(this.onRaf, 3)
 	}
 
 	onRaf = () => {
-		// this.cloudMesh.material.uniforms.frame.value = this.cloudMesh.material.uniforms.frame.value +
-		// this.cloudMesh.material.uniforms.cameraPos.value.copy(this.camera.position)
+		// this.cloudsUpdate()
 		this.controls.update()
 		this.qucheItem.material.uniforms.isQuche.value = 1
 		this.item.material.uniforms.isQuche.value = 0
-		this.updadeInstanceMatrix()
 		// this.renderFade()
 		this.renderBloom(true)
 		this.finalComposer.render()
 		// this.item.rotation.y = store.WebGL.globalUniforms.uTime.value
 	}
 
-	updadeInstanceMatrix = () => {
-		this.particles.forEach((p, i) => {
-			this.grow(p)
-			this.dummy.quaternion.copy(this.camera.quaternion)
-			this.dummy.rotation.z += p.rotationZ
-			this.dummy.scale.set(p.scale, p.scale, p.scale)
-			this.dummy.position.set(p.x, p.y, p.z)
-			this.dummy.updateMatrix()
-			this.instanceMesh.setMatrixAt(i, this.dummy.matrix)
-			// idx++
-		})
-		this.instanceMesh.instanceMatrix.needsUpdate = true
-	}
+	cloudsUpdate() {
+		/// CLOUDS PART
+		if (!this.activeCamera) return
+		this.clouds.visible = false
+		const ctx = store.WebGL.renderer.getContext()
+		store.WebGL.renderer.setRenderTarget(this.renderTarget)
 
-	grow(el) {
-		el.age += el.ageDelta
-		el.rotationZ += el.deltaRotation
-		el.scale = el.maxScale * 2 + .1 * Math.sin(el.age)
-		// el.scale = 10
+		ctx.colorMask(false, false, false, false)
+
+		store.WebGL.renderer.render(this, this.camera)
+		store.WebGL.renderer.setRenderTarget(null)
+
+		this.clouds.visible = true
+		this.clouds.material.uniforms.uDepthTexture.value = this.renderTarget.depthTexture
+		ctx.colorMask(true, true, true, true)
 	}
 
 	renderBloom = (mask) => {
-		if (mask === true) {
-			this.traverse(this.darkenNonBloomed)
-			this.composer.render()
-			this.traverse(this.restoreMaterial)
-		} else {
-			store.camera.layers.set(BLOOM_SCENE)
-			this.composer.render()
-			store.camera.layers.set(ENTIRE_SCENE)
-		}
-	}
-
-	renderFade = (mask) => {
 		if (mask === true) {
 			this.traverse(this.darkenNonBloomed)
 			this.composer.render()
@@ -570,6 +464,14 @@ export default class MainScene extends Scene {
 	onResize = () => {
 		this.camera.aspect = store.window.w / store.window.h
 		this.camera.updateProjectionMatrix()
+		this.bkgMaterial.uniforms.uResolution.value = new Vector2(
+			store.window.w * store.WebGL.renderer.getPixelRatio(),
+			store.window.h * store.WebGL.renderer.getPixelRatio()
+		)
+		this.GlassMaterial.uniforms.uResolution.value = new Vector2(
+			store.window.w * store.WebGL.renderer.getPixelRatio(),
+			store.window.h * store.WebGL.renderer.getPixelRatio()
+		)
 	}
 
 	startAnim() {
@@ -583,7 +485,6 @@ export default class MainScene extends Scene {
 			z: 0,
 			duration: 5,
 			onUpdate: () => {
-				console.log(this.pineapplePos)
 				this.pineapple.position.set(this.pineapplePos.x, this.pineapplePos.y, this.pineapplePos.z)
 			}
 		})
@@ -593,7 +494,7 @@ export default class MainScene extends Scene {
 				onUpdate: () => {
 					this.pineapple.rotation.set(this.pineappleRot, 0., 0)
 				}
-			}, '-=4')
+			}, '-=5')
 			.to(this, {
 				pineappleProgress: 1,
 				duration: 3,
@@ -603,7 +504,7 @@ export default class MainScene extends Scene {
 						el.material.uniforms.progress.value = this.pineappleProgress
 					})
 				}
-			}, '-=2')
+			}, '-=1')
 	}
 
 	load() {
@@ -612,6 +513,7 @@ export default class MainScene extends Scene {
 			models: {}
 		}
 		const glb = {
+			// furidays: 'furidays.glb',
 			furidays: 'furidays.glb',
 			vol2: 'vol2.glb'
 		}
