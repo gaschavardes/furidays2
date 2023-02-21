@@ -32,8 +32,8 @@ export default class MainScene extends Scene {
 		this.background = new Color(0x000000)
 		// this.fog = new Fog(0x000000, this.camera.near, this.camera.far)
 
-		this.controls = new OrbitControls(this.camera, store.WebGL.renderer.domElement)
-		this.controls.enableDamping = true
+		// this.controls = new OrbitControls(this.camera, store.WebGL.renderer.domElement)
+		// this.controls.enableDamping = true
 		this.materials = {}
 		this.load()
 		this.bloomLayer = new Layers()
@@ -407,7 +407,7 @@ export default class MainScene extends Scene {
 
 	onRaf = () => {
 		// this.cloudsUpdate()
-		this.controls.update()
+		// this.controls.update()
 		this.qucheItem.material.uniforms.isQuche.value = 1
 		this.item.material.uniforms.isQuche.value = 0
 		// this.renderFade()

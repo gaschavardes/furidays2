@@ -131,6 +131,6 @@ void main() {
 
 	// float colorSwitch = smoothstep(.2, .8, screenCoord.x);
 	diffuseColor.a *= 2. * depthFade * mask;
-	gl_FragColor = mix(vec4(vec3(1., .9, .7), diffuseColor.a), vec4(0., 0., 0.,1.), isDark) ;
+	gl_FragColor = mix(vec4(vec3(1., .95, .9), diffuseColor.a), vec4(0., 0., 0.,1.), isDark) ;
 	// gl_FragColor = vec4(vec3(sceneDepth), mask );
 }
