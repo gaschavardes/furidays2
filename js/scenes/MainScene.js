@@ -2,7 +2,7 @@ import { Color, Fog, Mesh, RGBAFormat, NearestFilter, DepthTexture, UnsignedShor
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { BasicMaterial, GlassMaterial, TextMaterial } from '../materials'
 import store from '../store'
-import { E } from '../utils'
+import { E, qs } from '../utils'
 import GlobalEvents from '../utils/GlobalEvents'
 import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise'
 // import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -18,11 +18,13 @@ import finalFxFrag from '../../glsl/includes/finalPass/frag.glsl'
 import Clouds from '../components/Clouds'
 
 import { TimelineMax } from 'gsap/gsap-core'
-
+import gsap from 'gsap'
 const ENTIRE_SCENE = 0; const BLOOM_SCENE = 12; const HALF_BLOOM_SCENE = 15
 export default class MainScene extends Scene {
 	constructor() {
 		super()
+		this.link = qs('.link')
+
 		this.dummy = new Object3D()
 		this.camera = new PerspectiveCamera(85, store.window.w / store.window.h, 0.1, 5000)
 		this.camera.position.z = 50
@@ -475,7 +477,7 @@ export default class MainScene extends Scene {
 	}
 
 	startAnim() {
-		this.tl = new TimelineMax({ yoyo: true, repeat: -1, repeatDelay: 3 })
+		this.tl = gsap.timeline()
 		this.pineapplePos = this.pineapple.position
 		this.pineappleRot = Math.PI * 0.5
 		this.pineappleProgress = 0
@@ -502,6 +504,32 @@ export default class MainScene extends Scene {
 					this.item.material.uniforms.uProgress.value = this.pineappleProgress
 					this.furidays.children.forEach(el => {
 						el.material.uniforms.progress.value = this.pineappleProgress
+					})
+				},
+				onComplete: () => {
+					gsap.to(this.link, { opacity: 1, duration: 1 })
+					this.link.addEventListener('click', (e) => {
+						e.preventDefault()
+						gsap.to(this, {
+							pineappleProgress: 0,
+							duration: 1,
+							ease: 'power2.out',
+							onUpdate: () => {
+								this.item.material.uniforms.uProgress.value = this.pineappleProgress
+							},
+							onComplete: () => {
+								this.item.material.uniforms.uX.value = -100
+								this.item.material.uniforms.uIncrease.value = 3
+								gsap.to(this, {
+									pineappleProgress: 2,
+									duration: 4,
+									ease: 'power2.inout',
+									onUpdate: () => {
+										this.item.material.uniforms.uProgress.value = this.pineappleProgress
+									}
+								})
+							}
+						})
 					})
 				}
 			}, '-=1')

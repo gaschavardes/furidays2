@@ -21,6 +21,8 @@ export default class GlassMaterial extends ShaderMaterial {
 				uProgress: { value: 0 },
 				isQuche: { value: 0 },
 				isDark: { value: 0 },
+				uX: { value: 0 },
+				uIncrease: { value: 1 },
 				// uFresnelVal: { value: options.fresnelVal },
 				uStartingTime: { value: 0 }
 				// uRefractPower: { value: options.refractPower }

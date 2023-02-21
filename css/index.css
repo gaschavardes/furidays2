@@ -26,3 +26,21 @@ canvas {
   right: 0;
   bottom: 0;
 }
+
+.link{
+	position: fixed;
+	bottom: 20px;
+	left: 50%;
+	transform: translate(-50%);
+	color: black;
+	text-transform: uppercase;
+	background-color: white;
+	border-radius: 100px;
+	padding: 10px 20px;
+	text-decoration: none;
+	font-weight: 500;
+	border: solid black 1px;
+	width: max-content;
+	font-family: futura;
+	opacity: 0;
+}
