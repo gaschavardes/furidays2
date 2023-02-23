@@ -51,7 +51,6 @@ export default class Clouds extends InstancedMesh {
 
 		this.setSoft()
 		this.material.uniforms.uMaskTexture.value = store.MainScene.smoke
-		console.log(store.MainScene.assets.textures)
 		this.texturePosition = new Vector3(0, 0, 0)
 
 		E.on(GlobalEvents.RESIZE, this.onResize)
@@ -116,7 +115,6 @@ export default class Clouds extends InstancedMesh {
 		// 	this.particles.push(this.particleData(Math.random() * 3 - 1.5, Math.random() * 1 - 0.5))
 		// }
 		this.count = this.particles.length
-		console.log(this.particles)
 		this.createInstance()
 	}
 

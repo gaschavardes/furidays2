@@ -11,6 +11,7 @@ export default class GlassMaterial extends ShaderMaterial {
 			depthWrite: true,
 			depthTest: true,
 			transparent: true,
+			side: DoubleSide,
 			opacity: 1,
 			uniforms: {
 				envMap: { value: options.envMap },

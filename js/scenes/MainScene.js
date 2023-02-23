@@ -24,6 +24,18 @@ export default class MainScene extends Scene {
 	constructor() {
 		super()
 		this.link = qs('.link')
+		this.loader = qs('.loader')
+
+		E.on('AssetsProgress', (e) => {
+			if (e.percent === 100) {
+				gsap.to(this.loader, {
+					opacity: 0,
+					onComplete: () => {
+						this.loader.style.pointerEvents = 'none'
+					}
+				})
+			}
+		})
 
 		this.dummy = new Object3D()
 		this.camera = new PerspectiveCamera(85, store.window.w / store.window.h, 0.1, 5000)
@@ -188,7 +200,7 @@ export default class MainScene extends Scene {
 		this.add(this.furidays)
 		this.furidays.position.set(0, 0, 15)
 		// this.furidays.scale.set(3.5, 3.5, 3.5)
-		store.isMobile ? this.furidays.scale.set(3.7, 3.7, 3.7) : this.furidays.scale.set(8, 8, 8)
+		store.isMobile ? this.furidays.scale.set(3.8, 3.8, 3.8) : this.furidays.scale.set(8, 8, 8)
 		this.furidays.rotateX(Math.PI * 0.5)
 
 		const vol2 = this.assets.models.vol2.scene.children[0]
@@ -465,6 +477,9 @@ export default class MainScene extends Scene {
 
 	onResize = () => {
 		this.camera.aspect = store.window.w / store.window.h
+		this.composer.setSize(store.window.w, store.window.h)
+		this.finalComposer.setSize(store.window.w, store.window.h)
+		this.renderTarget.setSize(Math.floor(store.window.w * store.WebGL.renderer.getPixelRatio()), Math.floor(store.window.h * store.WebGL.renderer.getPixelRatio()))
 		this.camera.updateProjectionMatrix()
 		this.bkgMaterial.uniforms.uResolution.value = new Vector2(
 			store.window.w * store.WebGL.renderer.getPixelRatio(),
@@ -520,12 +535,24 @@ export default class MainScene extends Scene {
 							onComplete: () => {
 								this.item.material.uniforms.uX.value = -100
 								this.item.material.uniforms.uIncrease.value = 3
-								gsap.to(this, {
-									pineappleProgress: 2,
-									duration: 4,
+								this.explode = gsap.to(this, {
+									pineappleProgress: 1,
+									duration: 2,
 									ease: 'power2.inout',
-									onUpdate: () => {
+									onUpdate: (self) => {
+										console.log(this.explode.progress())
+										if (this.explode.progress() > 0.8) {
+											if (!this.redirected) {
+												window.open('https://www.helloasso.com/associations/association-furidays?banner=true', '_blank')
+												this.redirected = true
+											}
+										}
 										this.item.material.uniforms.uProgress.value = this.pineappleProgress
+									},
+									onComplete: () => {
+										this.item.material.uniforms.uX.value = 0
+										this.item.material.uniforms.uIncrease.value = 1
+										this.redirected = false
 									}
 								})
 							}

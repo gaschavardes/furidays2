@@ -36,11 +36,76 @@ canvas {
 	text-transform: uppercase;
 	background-color: white;
 	border-radius: 100px;
-	padding: 10px 20px;
+	padding: 10px 10px;
 	text-decoration: none;
 	font-weight: 500;
 	border: solid black 1px;
+	font-size: 14px;
 	width: max-content;
 	font-family: futura;
 	opacity: 0;
+	white-space: nowrap;
+	transition: transform 0.2s ease;
+	transform-origin: 50% 50%;
+	display: block;
+}
+
+@media screen and (min-width: 500px) {
+	.link:hover{
+		transform: translate(-50%) scale(1.1);
+	}
+}
+
+.social{
+	position: absolute;
+	display: flex;
+	justify-content: space-between;
+	top: 20px;
+	right: 20px;
+	z-index: 10;
+}
+.social svg{
+	width: 30px;
+	height: 30px;
+	fill: #FFFFFF;
+	margin: 0 10px;
+}
+@media screen and (max-width: 500px) {
+	.social svg{
+		width: 25px;
+		height: 25px;
+		fill: #FFFFFF;
+		margin: 0 10px;
+	}
+}
+
+
+.loader{
+	position: absolute;
+	font-family: futura;
+	text-transform: uppercase;
+	width: 100%;
+	height: 100%;
+	background-color: #FFFFFF;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	z-index: 100;
+}
+.loader-container{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	max-width: 500px;
+	padding: 0 50px;
+}
+.loader-container p {
+	text-align: center;
+}
+
+iframe{
+	position: absolute;
+	z-index: 10;
 }
