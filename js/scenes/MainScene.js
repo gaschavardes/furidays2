@@ -541,9 +541,9 @@ export default class MainScene extends Scene {
 									ease: 'power2.inout',
 									onUpdate: (self) => {
 										console.log(this.explode.progress())
-										if (this.explode.progress() > 0.8) {
+										if (this.explode.progress() > 0.6) {
 											if (!this.redirected) {
-												window.open('https://www.helloasso.com/associations/association-furidays?banner=true', '_blank')
+												document.location.href = 'https://www.helloasso.com/associations/association-furidays?banner=true'
 												this.redirected = true
 											}
 										}
