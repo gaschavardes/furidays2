@@ -550,9 +550,9 @@ export default class MainScene extends Scene {
 										this.item.material.uniforms.uProgress.value = this.pineappleProgress
 									},
 									onComplete: () => {
-										// this.item.material.uniforms.uX.value = 0
-										// this.item.material.uniforms.uIncrease.value = 1
-										// this.redirected = false
+										this.item.material.uniforms.uX.value = 0
+										this.item.material.uniforms.uIncrease.value = 1
+										this.redirected = false
 									}
 								})
 							}
