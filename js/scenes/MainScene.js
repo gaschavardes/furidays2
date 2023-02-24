@@ -543,16 +543,16 @@ export default class MainScene extends Scene {
 										console.log(this.explode.progress())
 										if (this.explode.progress() > 0.6) {
 											if (!this.redirected) {
-												document.location.href = 'https://www.helloasso.com/associations/association-furidays?banner=true'
+												document.location.href = 'https://www.helloasso.com/associations/association-furidays/evenements/furidays-volume-ii'
 												this.redirected = true
 											}
 										}
 										this.item.material.uniforms.uProgress.value = this.pineappleProgress
 									},
 									onComplete: () => {
-										this.item.material.uniforms.uX.value = 0
-										this.item.material.uniforms.uIncrease.value = 1
-										this.redirected = false
+										// this.item.material.uniforms.uX.value = 0
+										// this.item.material.uniforms.uIncrease.value = 1
+										// this.redirected = false
 									}
 								})
 							}
